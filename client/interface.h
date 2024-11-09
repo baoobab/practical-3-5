@@ -31,6 +31,8 @@ public slots:
 signals:
     void request(QString);
 private:
+    QString strPolynom; // Строка для хранения текущего полинома
+
     QLineEdit *tempOutputField; // Поле для вывода результатов для метода answer
     QLineEdit *tempInputField;  // Поле для ввода для метода answer
 

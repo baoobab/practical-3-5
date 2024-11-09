@@ -150,6 +150,8 @@ TInterface::TInterface(QWidget *parent)
 
     // Установка основного макета
     setLayout(mainLayout);
+
+    strPolynom = "P(x) = (2+0i)(x - (1-2i))(x - (-3-4i))"; // TODO: потом убрать, чисто тест
 }
 
 TInterface::~TInterface()
@@ -197,12 +199,13 @@ TInterface::~TInterface()
 
 void TInterface::sendCanonicalFormRequest()
 {
-    formRequest(CANONICAL_FORM_REQUEST); // Отправляем запрос на вывод канонического вида
+    tempOutputField = outputField;
+    formRequest(CANONICAL_FORM_REQUEST, strPolynom); // Отправляем запрос на вывод канонического вида
 }
 
 void TInterface::sendClassicalFormRequest()
 {
-    formRequest(CLASSICAL_FORM_REQUEST); // Отправляем запрос на вывод классического вида
+    formRequest(CLASSICAL_FORM_REQUEST, strPolynom); // Отправляем запрос на вывод классического вида
 }
 
 void TInterface::sendChangeRootsCountRequest(const QString& count)
@@ -509,7 +512,7 @@ void TInterface::formRequest(RequestType requestType, const QString& params)
 
 void TInterface::answer(const QString& response)
 {
-    // qDebug() << "answer:" << response << "\n";
+    qDebug() << "answer:" << response << "\n";
     if (response.startsWith("POLYNOM:")) {
         QString polynomData = response.mid(8);
         tempOutputField->setText("Получен новый полином: " + polynomData);
