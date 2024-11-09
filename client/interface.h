@@ -19,22 +19,55 @@ public:
 
 public slots:
     void clearOutput(); // Очистить поле вывода
-    void sendCanonicalFormRequest(); // Отправить запрос на вывод канонического вида полинома
-    void sendClassicalFormRequest(); // Отправить запрос на вывод классического вида полинома
-    void sendChangeRootsCountRequest(const QString& inputText); // Отправить запрос на изменение количества корней
-    void sendCalculateValueAtXRequest(const QString& x); // Отправить запрос на вычисление значения в точке x
-    void sendSetNewPolynomialRequest(const QString& data); // Отправить запрос на задание нового полинома
-    void sendChangeRootAndANRequest(const QString& data); // Отправить запрос на изменение a_n и корня по индексу
+    void showCanonicalForm(); // Отправить запрос на вывод канонического вида полинома
+    void showClassicalForm(); // Отправить запрос на вывод классического вида полинома
+    void changeRootsCount(QString& inputText); // Отправить запрос на изменение количества корней
+    void calculateValueAtX(QString& inputText); // Отправить запрос на вычисление значения в точке x
+    void setNewPolynomial(QString& anText, QString& rootsText); // Отправить запрос на задание нового полинома
+    void changeRootAndAN(QString& anText, QString& indexText); // Отправить запрос на изменение a_n и корня по индексу
     void exitApplication(); // Выход из приложения
+
     void answer(const QString& response); // Обработка ответа от сервера
 
 signals:
     void request(QString);
 private:
-    QLineEdit *outputField; // Поле для вывода результатов
+    QLineEdit *outputField;
+    QPushButton *clearButton;
+    QHBoxLayout *outputLayout;
+    QVBoxLayout *mainLayout;
 
-    // Layouts and UI elements for various functionalities
-    QVBoxLayout *mainLayout; // Основной вертикальный макет
+    QLabel *canonicalFormLabel;
+    QPushButton *canonicalFormButton;
+    QHBoxLayout *canonicalFormLayout;
+
+    QLabel *classicalFormLabel;
+    QPushButton *classicalFormButton;
+    QHBoxLayout *classicalFormLayout;
+
+    QLabel *changeRootsCountLabel;
+    QLineEdit *changeRootsCountInput;
+    QPushButton *changeRootsCountButton;
+    QHBoxLayout *changeRootsCountLayout;
+
+    QLabel *newANAndRootsLabel;
+    QLineEdit *newANInput;
+    QLineEdit *newRootIndexInput;
+    QPushButton *newANAndRootsButton;
+    QHBoxLayout *newANAndRootsLayout;
+
+    QLabel *calculateValueAtXLabel;
+    QLineEdit *calculateValueAtXInput;
+    QPushButton *calculateValueAtXButton;
+    QHBoxLayout *calculateValueAtXLayout;
+
+    QLabel *setNewPolynomialLabel;
+    QLineEdit *setNewPolynomialANInput;
+    QLineEdit *setNewPolynomialRootsInput;
+    QPushButton *setNewPolynomialButton;
+    QHBoxLayout *setNewPolynomialLayout;
+
+    QPushButton *exitButton;
 
     void formRequest(RequestType requestType, const QString& params = ""); // Метод для отправки запроса на сервер с параметрами
 };
