@@ -23,8 +23,8 @@ public slots:
     void sendClassicalFormRequest(); // Отправить запрос на вывод классического вида полинома
     void sendChangeRootsCountRequest(const QString& inputText); // Отправить запрос на изменение количества корней
     void sendCalculateValueAtXRequest(const QString& x); // Отправить запрос на вычисление значения в точке x
-    void sendSetNewPolynomialRequest(const QString& data); // Отправить запрос на задание нового полинома
-    void sendChangeRootAndANRequest(const QString& data); // Отправить запрос на изменение a_n и корня по индексу
+    void sendSetNewPolynomialRequest(QString& anText, QString& rootsText); // Отправить запрос на задание нового полинома
+    void sendChangeRootAndANRequest(QString& anText, QString& indexText); // Отправить запрос на изменение a_n и корня по индексу
     void exitApplication(); // Выход из приложения
     void answer(const QString& response); // Обработка ответа от сервера
 
