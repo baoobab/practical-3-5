@@ -200,12 +200,13 @@ TInterface::~TInterface()
 void TInterface::sendCanonicalFormRequest()
 {
     tempOutputField = outputField;
-    formRequest(CANONICAL_FORM_REQUEST, strPolynom); // Отправляем запрос на вывод канонического вида
+    formRequest(CANONICAL_FORM_REQUEST); // Отправляем запрос на вывод канонического вида
 }
 
 void TInterface::sendClassicalFormRequest()
 {
-    formRequest(CLASSICAL_FORM_REQUEST, strPolynom); // Отправляем запрос на вывод классического вида
+    tempOutputField = outputField;
+    formRequest(CLASSICAL_FORM_REQUEST); // Отправляем запрос на вывод классического вида
 }
 
 void TInterface::sendChangeRootsCountRequest(const QString& count)
@@ -326,100 +327,66 @@ void TInterface::sendChangeRootsCountRequest(const QString& count)
 
 void TInterface::sendChangeRootAndANRequest(QString& anText, QString& indexText)
 {
-    QString outputText; // Результирующая строка
+    if (anText.length() > 0)
+    {
+        formRequest(SET_CANONIC_COEF_REQUEST, anText);
+    }
 
-        if (anText.length() > 0)
-        {
-            // number numAN; // Введённые данные для a_n в числовом представлении
-            // anText >> numAN;
-            // TODO: вместо этого кидать запрос на сервер - чтобы он отвалидировал строку в тип number
+    bool ok;
+    int index = indexText.toInt(&ok);
 
-            // polynom->setCanonicCoef(numAN);
-            // polynom->calcCoefFromRoots();
-            // TODO: вместо этого кидать запрос на сервер
+    if (!ok || index < 0)
+    {
+        QMessageBox::information(this, "Инфо", "Корни не переданы, изменен только a_n");
+        return;
+    }
 
-            clearOutput();
-            outputText.clear();
-            // outputText << *polynom;
-            // TODO: вместо этого кидать запрос на сервер
+    // Создаем диалоговое окно для изменения корня
+    QDialog* dialog = new QDialog(this);
+    dialog->setWindowTitle("Изменить корень");
 
-            outputField->setText(outputText);
-        } else
-        {
-            QMessageBox::information(this, "Инфо", "Поля пустые, изменений нет");
-            return;
+    // Метка и readonly поле для старого корня
+    QLabel* oldRootLabel = new QLabel("Текущий полином (нумерация корней с нуля):", dialog);
+    QLineEdit* oldRootField = new QLineEdit(dialog);
+
+
+    oldRootField->setText(strPolynom);
+    oldRootField->setReadOnly(true);
+
+    // Поле ввода для нового корня
+    QString newRootLabelText = "Новый корень по индексу " + QString::number(index) + ":";
+    QLabel* newRootLabel = new QLabel(newRootLabelText, dialog);
+    QLineEdit* newRootInput = new QLineEdit(dialog);
+
+    // Кнопка подтверждения
+    QPushButton* confirmButton = new QPushButton("Подтвердить", dialog);
+    connect(confirmButton, &QPushButton::clicked, dialog, &QDialog::accept);
+
+    // Макет для диалогового окна
+    QVBoxLayout* dialogLayout = new QVBoxLayout();
+    dialogLayout->addWidget(oldRootLabel);
+    dialogLayout->addWidget(oldRootField);
+    dialogLayout->addWidget(newRootLabel);
+    dialogLayout->addWidget(newRootInput);
+    dialogLayout->addWidget(confirmButton);
+    dialog->setLayout(dialogLayout);
+
+    // Показываем диалоговое окно и ждем подтверждения
+    if (dialog->exec() == QDialog::Accepted)
+    {
+        QString reqText = QString::number(index) + separator + newRootInput->text();
+        formRequest(CHANGE_ROOT_REQUEST, reqText);
+
+        bool isChanged = true; // TODO: добавить обработку ошибок в ответах
+
+        if (isChanged) {
+            QMessageBox::information(this, "Успех", "Корень изменён успешно");
+        } else {
+            QMessageBox::critical(this, "Ошибка", "Корень не изменился, проверьте правильность ввода");
         }
+    }
 
-        bool ok;
-        int index = indexText.toInt(&ok);
-        QString infoText;
-
-        if (!ok || index < 0)
-        {
-            QMessageBox::information(this, "Инфо", "Корни не переданы, изменен только a_n");
-            return;
-        }
-
-        // Создаем диалоговое окно для изменения корня
-        QDialog* dialog = new QDialog(this);
-        dialog->setWindowTitle("Изменить корень");
-
-        // Метка и readonly поле для старого корня
-        QLabel* oldRootLabel = new QLabel("Текущий полином (нумерация корней с нуля):", dialog);
-        QLineEdit* oldRootField = new QLineEdit(dialog);
-
-        // infoText << *polynom;
-        // TODO: вместо этого кидать запрос на сервер
-
-        oldRootField->setText(infoText);
-        oldRootField->setReadOnly(true);
-
-        // Поле ввода для нового корня
-        QString newRootLabelText = "Новый корень по индексу " + QString::number(index) + ":";
-        QLabel* newRootLabel = new QLabel(newRootLabelText, dialog);
-        QLineEdit* newRootInput = new QLineEdit(dialog);
-
-        // Кнопка подтверждения
-        QPushButton* confirmButton = new QPushButton("Подтвердить", dialog);
-        connect(confirmButton, &QPushButton::clicked, dialog, &QDialog::accept);
-
-        // Макет для диалогового окна
-        QVBoxLayout* dialogLayout = new QVBoxLayout();
-        dialogLayout->addWidget(oldRootLabel);
-        dialogLayout->addWidget(oldRootField);
-        dialogLayout->addWidget(newRootLabel);
-        dialogLayout->addWidget(newRootInput);
-        dialogLayout->addWidget(confirmButton);
-        dialog->setLayout(dialogLayout);
-
-        // Показываем диалоговое окно и ждем подтверждения
-        if (dialog->exec() == QDialog::Accepted)
-        {
-            QString rootText;
-
-            // number newRoot;
-            // rootText = newRootInput->text();
-            // rootText >> newRoot;
-            // TODO: вместо этого кидать запрос на сервер - чтобы он отвалидировал строку в тип number
-
-            bool isChanged = false; // polynom->changeRootByIndex(index, newRoot);
-            // polynom->calcCoefFromRoots();
-            // TODO: вместо этого кидать запрос на сервер
-
-            clearOutput();
-            outputText.clear();
-            // outputText << *polynom;
-            // TODO: вместо этого кидать запрос на сервер
-            outputField->setText(outputText);
-
-            if (isChanged) {
-                QMessageBox::information(this, "Успех", "Корень изменён успешно");
-            } else {
-                QMessageBox::critical(this, "Ошибка", "Корень не изменился, проверьте правильность ввода");
-            }
-        }
-
-        delete dialog;
+    delete dialog;
 }
 
 void TInterface::sendCalculateValueAtXRequest(const QString& x)
@@ -506,18 +473,45 @@ void TInterface::sendSetNewPolynomialRequest(QString& anText, QString& rootsText
 
 void TInterface::formRequest(RequestType requestType, const QString& params)
 {
-    emit request(QString::number(requestType) + separator + params);
+    emit request(QString::number(requestType) + separator + strPolynom + separator + params);
     // Эмитируем сигнал запроса для отправки на сервер.
 }
 
 void TInterface::answer(const QString& response)
 {
-    qDebug() << "answer:" << response << "\n";
-    if (response.startsWith("POLYNOM:")) {
-        QString polynomData = response.mid(8);
-        tempOutputField->setText("Получен новый полином: " + polynomData);
-    } else {
-        tempOutputField->setText(response);
+
+    char separatorChar = separator.toLatin1(); // Преобразование QChar в char
+    int pos = response.indexOf(separatorChar); // Используем response для поиска сепаратора
+
+    // Проверка на наличие разделителя
+    if (pos == -1) {
+        qDebug() << "Separator not found in message.";
+        return;
+    }
+
+    int requestType = response.left(pos).toInt(); // Получаем тип запроса
+    QString strMsg = response.mid(pos + 1); // Убираем тип запроса из сообщения
+
+
+    switch (requestType) {
+    case CANONICAL_FORM_ANSWER:
+        tempOutputField->setText(strMsg);
+        break;
+    case CLASSICAL_FORM_ANSWER:
+        strPolynom = strMsg;
+        tempOutputField->setText(strPolynom);
+        break;
+    case SET_CANONIC_COEF_ANSWER:
+        strPolynom = strMsg;
+        tempOutputField->setText(strPolynom);
+        break;
+    case CHANGE_ROOT_ANSWER:
+        strPolynom = strMsg;
+        tempOutputField->setText(strPolynom);
+        break;
+    default:
+        tempOutputField->setText("Неизвестный ответ.");
+        break;
     }
 }
 

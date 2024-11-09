@@ -15,14 +15,11 @@ TApplication::TApplication(int argc, char *argv[])
 
 void TApplication::recieve(QByteArray msg)
 {
-    QString answer;
-
+    QString answer; // Тут будет ответ
     QString strMsg = QString(msg); // Извлечение параметров из сообщения
-    TPolynom p(strMsg); // Создание полинома
-
 
     char separatorChar = separator.toLatin1(); // Преобразование QChar в char
-    int pos = msg.indexOf(separatorChar);
+    int pos = strMsg.indexOf(separatorChar);
 
     // Проверка на наличие разделителя
     if (pos == -1) {
@@ -30,8 +27,21 @@ void TApplication::recieve(QByteArray msg)
         return; // Обработка случая, когда разделитель не найден
     }
 
-    int requestType = msg.left(pos).toInt();
-    msg = msg.mid(pos + 1); // Убираем тип запроса из сообщения
+    int requestType = strMsg.left(pos).toInt(); // Получаем тип запроса
+
+    strMsg = strMsg.mid(pos + 1); // Убираем тип запроса из сообщения
+
+    // Проверяем, начинается ли параметр "P(x) = "
+    const QString prefix = "P(x) = ";
+    if (!strMsg.startsWith(prefix)) {
+        // Иначе ошибка, тк полином должен идти первым параметром
+        qDebug() << "Polynom not found as first param in message.";
+        return;
+    }
+
+    QString param = strMsg.mid(0, strMsg.indexOf(separatorChar)); // Получаем первый параметр - это должен быть полином
+    TPolynom p(param); // Создание полинома
+    strMsg.remove(0, strMsg.indexOf(separatorChar) + 1); // Убираем полином из сообщения
 
     switch (requestType)
     {
@@ -56,13 +66,16 @@ void TApplication::recieve(QByteArray msg)
         answer << QString().setNum(CHANGE_ROOTS_COUNT_ANSWER) << "Количество корней изменено.";
         break;
     }
-
-    case CHANGE_ROOT_AND_AN_REQUEST:
+    case CHANGE_ROOT_REQUEST:
     {
-        QString rootChangeData;
-        rootChangeData = strMsg; // Ожидаем данные для изменения a_n и корня
-        // Логика изменения a_n и корня должна быть реализована в классе TPolinom
-        answer << QString().setNum(CHANGE_ROOT_AND_AN_ANSWER) << "Изменение выполнено.";
+        QString index = strMsg.mid(0, strMsg.indexOf(separatorChar)); // Первый параметр (после полинома) - индекс
+        QString strNewRoot = strMsg.mid(strMsg.indexOf(separatorChar)); // Второй параметр (после полинома) - сам корень
+        number newRoot;
+        strNewRoot >> newRoot;
+        p.changeRootByIndex(index.toInt(), newRoot);
+        p.setPrintMode(EPrintMode::EPrintModeClassic); // Ставим классик принт мод для норм отображения
+
+        answer << QString().setNum(CHANGE_ROOT_ANSWER) << p;
         break;
     }
 
@@ -80,7 +93,17 @@ void TApplication::recieve(QByteArray msg)
         answer << QString().setNum(SET_NEW_POLYNOMIAL_ANSWER) << "Новый полином установлен.";
         break;
     }
+    case SET_CANONIC_COEF_REQUEST:
+    {
+        number newCanonicCoef;
+        strMsg >> newCanonicCoef; // Единственный параметр (после полинома) - канон. коэф
 
+        p.setCanonicCoef(newCanonicCoef);
+        p.setPrintMode(EPrintMode::EPrintModeClassic); // Ставим классик принт мод для норм отображения
+
+        answer << QString().setNum(SET_CANONIC_COEF_ANSWER) << p;
+        break;
+    }
     default:
     {
         answer << "Неизвестный запрос.";
