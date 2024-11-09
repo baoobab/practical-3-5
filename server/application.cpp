@@ -48,13 +48,13 @@ void TApplication::recieve(QByteArray msg)
     case CANONICAL_FORM_REQUEST:
     {
         p.setPrintMode(EPrintMode::EPrintModeCanonical);
-        answer << QString().setNum(CANONICAL_FORM_ANSWER) << p;
+        answer << QString().setNum(CANONICAL_FORM_ANSWER) << "OK" << p; // Ответ формата - код_запроса;статус;полином
         break;
     }
     case CLASSICAL_FORM_REQUEST:
     {
         p.setPrintMode(EPrintMode::EPrintModeClassic);
-        answer << QString().setNum(CLASSICAL_FORM_ANSWER) << p;
+        answer << QString().setNum(CLASSICAL_FORM_ANSWER) << "OK" << p; // Ответ формата - код_запроса;статус;полином
         break;
     }
     case CHANGE_ROOTS_COUNT_REQUEST:
@@ -63,7 +63,7 @@ void TApplication::recieve(QByteArray msg)
         int newRootsCount;
         newRootsCount = msg.toInt(); // Получаем новое количество корней
         // логика обработки корней
-        answer << QString().setNum(CHANGE_ROOTS_COUNT_ANSWER) << "Количество корней изменено.";
+        answer << QString().setNum(CHANGE_ROOTS_COUNT_ANSWER) << "OK" << p; // Ответ формата - код_запроса;статус;полином
         break;
     }
     case CHANGE_ROOT_REQUEST:
@@ -72,16 +72,22 @@ void TApplication::recieve(QByteArray msg)
         QString strNewRoot = strMsg.mid(strMsg.indexOf(separatorChar)); // Второй параметр (после полинома) - сам корень
         number newRoot;
         strNewRoot >> newRoot;
-        p.changeRootByIndex(index.toInt(), newRoot);
-        p.setPrintMode(EPrintMode::EPrintModeClassic); // Ставим классик принт мод для норм отображения
 
-        answer << QString().setNum(CHANGE_ROOT_ANSWER) << p;
+        bool isChanged = p.changeRootByIndex(index.toInt(), newRoot);
+
+        if (!isChanged) { // Обработка ошибки - если корень не изменился
+            answer << QString().setNum(CHANGE_ROOT_ANSWER) << "ERR"; // Ответ формата - код_запроса;статус
+            break;
+        }
+
+        p.setPrintMode(EPrintMode::EPrintModeClassic); // Ставим классик принт мод для норм отображения
+        answer << QString().setNum(CHANGE_ROOT_ANSWER) << "OK" << p; // Ответ формата - код_запроса;статус;полином
         break;
     }
 
     case CALCULATE_VALUE_AT_X_REQUEST:
     {
-        answer << QString().setNum(CALCULATE_VALUE_AT_X_ANSWER) << p.value(0);
+        answer << QString().setNum(CALCULATE_VALUE_AT_X_ANSWER) << "OK" << p.value(0); // Ответ формата - код_запроса;статус;значение
         break;
     }
 
@@ -90,7 +96,7 @@ void TApplication::recieve(QByteArray msg)
         QString newPolynomialData;
         newPolynomialData = strMsg; // Ожидаем данные для нового полинома
         // Логика задания нового полинома должна быть реализована в классе TPolinom
-        answer << QString().setNum(SET_NEW_POLYNOMIAL_ANSWER) << "Новый полином установлен.";
+        answer << QString().setNum(SET_NEW_POLYNOMIAL_ANSWER) << "OK" << p; // Ответ формата - код_запроса;статус;полином
         break;
     }
     case SET_CANONIC_COEF_REQUEST:
@@ -101,12 +107,12 @@ void TApplication::recieve(QByteArray msg)
         p.setCanonicCoef(newCanonicCoef);
         p.setPrintMode(EPrintMode::EPrintModeClassic); // Ставим классик принт мод для норм отображения
 
-        answer << QString().setNum(SET_CANONIC_COEF_ANSWER) << p;
+        answer << QString().setNum(SET_CANONIC_COEF_ANSWER) << "OK" << p; // Ответ формата - код_запроса;статус;полином
         break;
     }
     default:
     {
-        answer << "Неизвестный запрос.";
+        answer << QString().setNum(ERROR_UNKNOWN_REQUEST) << "ERR"; // Ответ формата - код_запроса;статус
         break;
     }
     }
