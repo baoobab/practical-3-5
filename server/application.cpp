@@ -16,19 +16,17 @@ TApplication::TApplication(int argc, char *argv[])
 void TApplication::recieve(QByteArray msg)
 {
     QString answer;
-    number root;
 
-    // Извлечение параметров из сообщения
-    QString strMsg = QString(msg);
-    // strMsg >> root;
+    QString strMsg = QString(msg); // Извлечение параметров из сообщения
+    TPolynom p(strMsg); // Создание полинома
 
-    TPolynom p; // Создание полинома
 
     char separatorChar = separator.toLatin1(); // Преобразование QChar в char
     int pos = msg.indexOf(separatorChar);
 
     // Проверка на наличие разделителя
     if (pos == -1) {
+        qDebug() << "Separator not found in message.";
         return; // Обработка случая, когда разделитель не найден
     }
 
@@ -38,15 +36,17 @@ void TApplication::recieve(QByteArray msg)
     switch (requestType)
     {
     case CANONICAL_FORM_REQUEST:
+    {
         p.setPrintMode(EPrintMode::EPrintModeCanonical);
         answer << QString().setNum(CANONICAL_FORM_ANSWER) << p;
         break;
-
+    }
     case CLASSICAL_FORM_REQUEST:
+    {
         p.setPrintMode(EPrintMode::EPrintModeClassic);
         answer << QString().setNum(CLASSICAL_FORM_ANSWER) << p;
         break;
-
+    }
     case CHANGE_ROOTS_COUNT_REQUEST:
     {
 
@@ -68,8 +68,7 @@ void TApplication::recieve(QByteArray msg)
 
     case CALCULATE_VALUE_AT_X_REQUEST:
     {
-        strMsg >> root; // Получаем значение x
-        answer << QString().setNum(CALCULATE_VALUE_AT_X_ANSWER) << root << p.value(root);
+        answer << QString().setNum(CALCULATE_VALUE_AT_X_ANSWER) << p.value(0);
         break;
     }
 
@@ -83,9 +82,12 @@ void TApplication::recieve(QByteArray msg)
     }
 
     default:
+    {
         answer << "Неизвестный запрос.";
         break;
     }
+    }
 
-    comm->send(QByteArray().append(answer.toUtf8())); // Отправляем ответ обратно клиенту
+    qDebug() << "Sending response:" << answer; // Логируем ответ перед отправкой
+    comm->send(QByteArray().append(answer.toUtf8())); // Отправляем ответ обратно клиенту answer.toUtf8()
 }

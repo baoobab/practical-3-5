@@ -19,6 +19,7 @@ private:
     TArray* arrRoot;
 public:
     TPolynom(number canonicCoef = 1);
+    TPolynom(const QString& qstrPolynom); // Новый метод, для извлечения полинома из QString
     ~TPolynom();
     void addCoef(number coef);
     void addRoot(number root);

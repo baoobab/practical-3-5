@@ -3,6 +3,7 @@
 #include <array.h>
 #include <math.h>
 #include "QString"
+#include <QRegularExpression>
 
 using namespace std;
 
@@ -12,6 +13,54 @@ TPolynom::TPolynom(number canonicCoef) {
     this->printMode = EPrintMode::EPrintModeClassic;
     this->arrCoef = new TArray();
     this->arrRoot = new TArray();
+}
+
+TPolynom::TPolynom(const QString& qstrPolynom) {
+    this->printMode = EPrintMode::EPrintModeClassic;
+    this->arrCoef = new TArray();
+    this->arrRoot = new TArray();
+
+    // Удаляем пробелы из строки
+    QString polynomStr = qstrPolynom.simplified();
+
+    // Проверяем, начинается ли строка с "P(x)="
+    const QString prefix = "P(x)=";
+    if (polynomStr.startsWith(prefix)) {
+        polynomStr.remove(0, prefix.length()); // Убираем префикс
+    }
+
+    // Регулярное выражение для извлечения коэффициентов и корней
+    QRegularExpression regex(R"(\(([^)]+)\))");
+    QRegularExpressionMatchIterator it = regex.globalMatch(polynomStr);
+    it.next();
+
+    // Извлечение коэффициента
+    if (it.hasNext()) {
+        QRegularExpressionMatch match = it.next();
+        QString coefStr = match.captured(1);
+        number coef;
+        coefStr >> coef;
+        this->setCanonicCoef(coef);
+    }
+
+    // Извлечение корней
+    while (it.hasNext()) {
+        QRegularExpressionMatch match = it.next();
+        QString rootStr = match.captured(1);
+
+        // Удаляем "x - " если присутствует
+        if (rootStr.startsWith("x-")) {
+            rootStr.remove(0, 2); // Убираем "x - "
+        }
+        if (!rootStr.isEmpty()) {
+            number root; // Функция для парсинга комплексного числа
+            rootStr >> root;
+            arrRoot->appendElement(root); // Добавляем корень в массив
+        }
+
+    }
+
+    this->calcCoefFromRoots();
 }
 
 TPolynom::~TPolynom() {
