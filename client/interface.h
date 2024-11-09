@@ -27,10 +27,10 @@ public slots:
     void changeRootAndAN(QString& anText, QString& indexText); // Отправить запрос на изменение a_n и корня по индексу
     void exitApplication(); // Выход из приложения
 
-    void answer(const QString& response); // Обработка ответа от сервера
+    void answer(const QJsonDocument& jsonDoc); // Обработка ответа от сервера
 
 signals:
-    void request(QString);
+    void request(const QJsonDocument& jsonDoc);
 private:
     QLineEdit *outputField;
     QPushButton *clearButton;
@@ -69,7 +69,7 @@ private:
 
     QPushButton *exitButton;
 
-    void formRequest(RequestType requestType, const QString& params = ""); // Метод для отправки запроса на сервер с параметрами
+    void formRequest(MessageType messageType, const QJsonObject& params); // Метод для отправки запроса на сервер с параметрами
 };
 
 #endif // INTERFACE_H

@@ -18,8 +18,8 @@ public:
     TApplication(int, char**);
 
 public slots:
-    void fromCommunicator(QByteArray);
-    void toCommunicator(QString);
+    void fromCommunicator(QJsonDocument);
+    void toCommunicator(QJsonDocument);
 
 };
 

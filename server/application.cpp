@@ -2,6 +2,10 @@
 #include "polynom.h"
 #include "common.h"
 #include "number.h"
+#include <QJsonDocument>
+#include <QJsonObject>
+#include <QJsonValue>
+#include <QJsonArray>
 
 TApplication::TApplication(int argc, char *argv[])
     : QCoreApplication(argc, argv)
@@ -10,81 +14,91 @@ TApplication::TApplication(int argc, char *argv[])
                         QHostAddress("127.0.0.1"), 10001 };
     comm = new TCommunicator(pars, this);
 
-    connect(comm, SIGNAL(recieved(QByteArray)), this, SLOT(recieve(QByteArray)));
+    connect(comm, SIGNAL(recieved(QJsonDocument)), this, SLOT(recieve(QJsonDocument)));
 }
 
-void TApplication::recieve(QByteArray msg)
+void TApplication::recieve(QJsonDocument jsonDoc)
 {
-    QString answer;
-    number root;
-
-    // Извлечение параметров из сообщения
-    QString strMsg = QString(msg);
-    strMsg >> root;
-
-    TPolynom p; // Создание полинома
-
-    char separatorChar = separator.toLatin1(); // Преобразование QChar в char
-    int pos = msg.indexOf(separatorChar);
-
-    // Проверка на наличие разделителя
-    if (pos == -1) {
-        return; // Обработка случая, когда разделитель не найден
+    if (jsonDoc.isNull()) {
+        qDebug() << "Received an empty or invalid JSON document.";
+        return;
     }
 
-    int requestType = msg.left(pos).toInt();
-    msg = msg.mid(pos + 1); // Убираем тип запроса из сообщения
+    // Извлекаем объект из JSON-документа
+    QJsonObject jsonObj = jsonDoc.object();
 
-    switch (requestType)
+    // Проверяем тип запроса
+    if (!jsonObj.contains("messageType")) {
+        QJsonObject errObj;
+        errObj["messageType"] = ERROR_UNKNOWN_MESSAGE;
+        QJsonDocument jsonDoc(errObj);
+        comm->send(jsonDoc); // Отправляем ответ об ошибке обратно
+        return;
+    }
+    // Проверяем данные в запросе
+    if (!jsonObj.contains("data")) {
+        QJsonObject errObj;
+        errObj["messageType"] = ERROR_UNKNOWN_MESSAGE; // TODO: мб вынести ошибки отдельно
+        QJsonDocument jsonDoc(errObj);
+        comm->send(jsonDoc); // Отправляем ответ об ошибке обратно
+        return;
+    }
+
+    int messageType = jsonObj["messageType"].toInt();
+    // Создаем JSON объект для ответа
+    QJsonObject answerObj;
+    QJsonObject answerDataObj;
+    answerObj["messageType"] = messageType;
+
+    // Создание полинома (можно передавать параметры через JSON при необходимости)
+    TPolynom p;
+
+    switch (messageType)
     {
-    case CANONICAL_FORM_REQUEST:
+    case CANONICAL_FORM_MESSAGE:
         p.setPrintMode(EPrintMode::EPrintModeCanonical);
-        answer << QString().setNum(CANONICAL_FORM_ANSWER) << p;
+        answerDataObj["pCanonicCoef"] = 52;
         break;
 
-    case CLASSICAL_FORM_REQUEST:
+    case CLASSICAL_FORM_MESSAGE:
         p.setPrintMode(EPrintMode::EPrintModeClassic);
-        answer << QString().setNum(CLASSICAL_FORM_ANSWER) << p;
+        answerDataObj["pCanonicCoef"] = 5333;
         break;
 
-    case CHANGE_ROOTS_COUNT_REQUEST:
+    case CHANGE_ROOTS_COUNT_MESSAGE:
     {
-        int newRootsCount;
-        newRootsCount = msg.toInt(); // Получаем новое количество корней
-        // логика обработки корней
-        answer << QString().setNum(CHANGE_ROOTS_COUNT_ANSWER) << "Количество корней изменено.";
+
+        // Логика обработки изменения количества корней
         break;
     }
 
-    case CHANGE_ROOT_AND_AN_REQUEST:
+    case CHANGE_ROOT_AND_AN_MESSAGE:
     {
-        QString rootChangeData;
-        rootChangeData = strMsg; // Ожидаем данные для изменения a_n и корня
-        // Логика изменения a_n и корня должна быть реализована в классе TPolinom
-        answer << QString().setNum(CHANGE_ROOT_AND_AN_ANSWER) << "Изменение выполнено.";
+
+        // Логика изменения a_n и корня должна быть реализована в классе TPolynom
         break;
     }
 
-    case CALCULATE_VALUE_AT_X_REQUEST:
+    case CALCULATE_VALUE_AT_X_MESSAGE:
     {
-        strMsg >> root; // Получаем значение x
-        answer << QString().setNum(CALCULATE_VALUE_AT_X_ANSWER) << root << p.value(root);
+        // Логика
         break;
     }
 
-    case SET_NEW_POLYNOMIAL_REQUEST:
+    case SET_NEW_POLYNOMIAL_MESSAGE:
     {
-        QString newPolynomialData;
-        newPolynomialData = strMsg; // Ожидаем данные для нового полинома
-        // Логика задания нового полинома должна быть реализована в классе TPolinom
-        answer << QString().setNum(SET_NEW_POLYNOMIAL_ANSWER) << "Новый полином установлен.";
+        // Логика задания нового полинома должна быть реализована в классе TPolynom
         break;
     }
 
     default:
-        answer << QString().setNum(ERROR_UNKNOWN_REQUEST) << "Неизвестный запрос.";
+        answerDataObj["pCanonicCoef"] = 0;
         break;
     }
 
-    comm->send(QByteArray().append(answer.toUtf8())); // Отправляем ответ обратно клиенту
+    // Преобразуем JSON объект в строку
+    answerObj["data"] = answerDataObj;
+    QJsonDocument jsonAnswerDoc(answerObj);
+
+    comm->send(jsonAnswerDoc); // Отправляем ответ обратно клиенту
 }

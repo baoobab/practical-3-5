@@ -1,4 +1,6 @@
 #include "application.h"
+#include "common.h"
+
 
 TApplication::TApplication(int argc, char *argv[])
             : QApplication(argc,argv)
@@ -10,19 +12,19 @@ TApplication::TApplication(int argc, char *argv[])
     interface = new TInterface();
     interface->show();
 
-    connect(comm,SIGNAL(recieved(QByteArray)),this,
-            SLOT(fromCommunicator(QByteArray)));
-    connect(interface,SIGNAL(request(QString)),
-            this,SLOT(toCommunicator(QString)));
+    connect(comm,SIGNAL(recieved(QJsonDocument)),this,
+            SLOT(fromCommunicator(QJsonDocument)));
+    connect(interface,SIGNAL(request(QJsonDocument)),
+            this,SLOT(toCommunicator(QJsonDocument)));
 
 }
 
-void TApplication::fromCommunicator(QByteArray msg)
+void TApplication::fromCommunicator(QJsonDocument jsonDoc)
 {
-    interface->answer(QString(msg));
+    interface->answer(jsonDoc);
 }
 
-void TApplication::toCommunicator(QString msg)
+void TApplication::toCommunicator(QJsonDocument jsonDoc)
 {
-    comm->send(QByteArray().append(msg.toUtf8()));
+    comm->send(jsonDoc);
 }

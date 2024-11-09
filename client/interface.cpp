@@ -1,9 +1,13 @@
 #include "interface.h"
+#include "common.h"
 #include <QVBoxLayout>
 #include <QHBoxLayout>
 #include <QMessageBox>
 #include <QApplication>
-#include "common.h"
+#include <QJsonDocument>
+#include <QJsonObject>
+#include <QJsonValue>
+#include <QJsonArray>
 
 
 TInterface::TInterface(QWidget *parent)
@@ -504,73 +508,78 @@ void TInterface::setNewPolynomial(QString& anText, QString& rootsText)
 }
 
 
-void TInterface::formRequest(RequestType requestType, const QString& params)
+void TInterface::formRequest(MessageType messageType, const QJsonObject& params)
 {
-    emit request(QString::number(requestType) + (params.isEmpty() ? "" : " " + params));
-    // Эмитируем сигнал запроса для отправки на сервер.
+    // Создаем JSON объект для запроса
+    QJsonObject requestObj;
+    requestObj["messageType"] = static_cast<int>(messageType); // Преобразуем тип сообщения в int
+    requestObj["data"] = params; // Добавляем параметры в объект данных
+
+    // Преобразуем JSON объект в строку
+    QJsonDocument jsonDoc(requestObj);
+
+    emit request(jsonDoc); // Эмитируем сигнал запроса для отправки на сервер.
 }
 
-void TInterface::answer(const QString& response)
+void TInterface::answer(const QJsonDocument& jsonDoc)
 {
-    // Разделяем ответ на тип и данные
-    QStringList parts = response.split(" ");
-    if (parts.isEmpty()) {
-        outputField->setText("Ошибка: пустой ответ.");
-        return;
-    }
-
-    // Извлекаем тип ответа
-    bool ok;
-    int responseType = parts[0].toInt(&ok);
-    if (!ok) {
+    if (jsonDoc.isNull()) {
         outputField->setText("Ошибка: неверный формат ответа.");
         return;
     }
 
+    // Извлекаем объект из JSON-документа
+    QJsonObject jsonObj = jsonDoc.object();
+
+    // Проверяем тип ответа
+    if (!jsonObj.contains("messageType")) {
+        outputField->setText("Ошибка: отсутствует или неверный тип сообщения.");
+        return;
+    }
+    // Проверяем данные ответа
+    if (!jsonObj.contains("data")) {
+        outputField->setText("Ошибка: ответ пустой.");
+        return;
+    }
+
+    // Приводим QJsonValue к QJsonObject
+    QJsonObject jsonDataObj = jsonObj["data"].toObject();
+    int messageType = jsonObj["messageType"].toInt();
+
+
+    QString polynomData;
+    polynomData += jsonDataObj["pCanonicCoef"].toString();
+    // polynomData += jsonObj["data"]["pRoots"].toString();
+
     // Обработка ответа в зависимости от типа
-    switch (responseType)
+    switch (messageType)
     {
-    case CANONICAL_FORM_ANSWER:
-        if (parts.size() > 1) {
-            QString polynomData = parts.mid(1).join(" "); // Объединяем оставшиеся части как данные полинома
-            outputField->setText("Каноническая форма: " + polynomData);
-        } else {
-            outputField->setText("Ошибка: недостаточно данных для канонической формы.");
-        }
+    case CANONICAL_FORM_MESSAGE:
+
+        outputField->setText("P(x) = " + polynomData);
         break;
 
-    case CLASSICAL_FORM_ANSWER:
-        if (parts.size() > 1) {
-            QString polynomData = parts.mid(1).join(" ");
-            outputField->setText("Классическая форма: " + polynomData);
-        } else {
-            outputField->setText("Ошибка: недостаточно данных для классической формы.");
-        }
+    case CLASSICAL_FORM_MESSAGE:
+        outputField->setText("Classic: " + polynomData);
         break;
 
-    case CHANGE_ROOTS_COUNT_ANSWER:
+    case CHANGE_ROOTS_COUNT_MESSAGE:
         outputField->setText("Количество корней изменено.");
         break;
 
-    case CHANGE_ROOT_AND_AN_ANSWER:
+    case CHANGE_ROOT_AND_AN_MESSAGE:
         outputField->setText("Изменение a_n и корня выполнено.");
         break;
 
-    case CALCULATE_VALUE_AT_X_ANSWER:
-        if (parts.size() > 2) {
-            QString xValue = parts[1];
-            QString resultValue = parts[2];
-            outputField->setText("Значение в точке " + xValue + ": " + resultValue);
-        } else {
-            outputField->setText("Ошибка: недостаточно данных для вычисления значения.");
-        }
+    case CALCULATE_VALUE_AT_X_MESSAGE:
+        outputField->setText("Значение в точке");
         break;
 
-    case SET_NEW_POLYNOMIAL_ANSWER:
+    case SET_NEW_POLYNOMIAL_MESSAGE:
         outputField->setText("Новый полином установлен.");
         break;
 
-    case ERROR_UNKNOWN_REQUEST:
+    case ERROR_UNKNOWN_MESSAGE:
         outputField->setText("Ошибка: неизвестный запрос.");
         break;
 

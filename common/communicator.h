@@ -4,6 +4,10 @@
 #include <QObject>
 #include <QUdpSocket>
 #include <QHostAddress>
+#include <QJsonDocument>
+#include <QJsonObject>
+#include <QJsonValue>
+#include "common.h"
 
 struct TCommParams
 {
@@ -21,18 +25,16 @@ class TCommunicator : public QUdpSocket
     TCommParams  params;
 
 public:
-    TCommunicator(TCommParams&,QObject *parent = nullptr);
+    TCommunicator(TCommParams&, QObject *parent = nullptr);
     bool isReady();
 
 signals:
-    void recieved(QByteArray);
+    void recieved(QJsonDocument); // Изменено на QJsonDocument
 
 public slots:
-    void send(QByteArray);
-
+    void send(const QJsonDocument& jsonDoc); // Обновлено для передачи в JSON
 private slots:
     void recieve();
-
 };
 
 #endif // COMMUNICATOR_H
