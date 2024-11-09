@@ -17,6 +17,9 @@ TInterface::TInterface(QWidget *parent)
     outputField->setPlaceholderText("Результат любого пункта будет здесь...");
     outputField->setMaximumWidth(350);
 
+    tempOutputField = outputField;
+    tempInputField = nullptr;
+
     // Кнопка "Очистить"
     QPushButton *clearButton = new QPushButton("Очистить", this);
     connect(clearButton, &QPushButton::clicked, this, &TInterface::clearOutput);
@@ -151,7 +154,45 @@ TInterface::TInterface(QWidget *parent)
 
 TInterface::~TInterface()
 {
-    // TODO: ПО ЕГОРИКУ ДЕЛИТОВ НАКИДАТЬ СЮДА
+    delete tempOutputField;
+    delete tempInputField;
+
+    delete outputField;
+    delete clearButton;
+    delete outputLayout;
+    delete mainLayout;
+
+    delete canonicalFormLabel;
+    delete canonicalFormButton;
+    delete canonicalFormLayout;
+
+    delete classicalFormLabel;
+    delete classicalFormButton;
+    delete classicalFormLayout;
+
+    delete changeRootsCountLabel;
+    delete changeRootsCountInput;
+    delete changeRootsCountButton;
+    delete changeRootsCountLayout;
+
+    delete newANAndRootsLabel;
+    delete newANInput;
+    delete newRootIndexInput;
+    delete newANAndRootsButton;
+    delete newANAndRootsLayout;
+
+    delete calculateValueAtXLabel;
+    delete calculateValueAtXInput;
+    delete calculateValueAtXButton;
+    delete calculateValueAtXLayout;
+
+    delete setNewPolynomialLabel;
+    delete setNewPolynomialANInput;
+    delete setNewPolynomialRootsInput;
+    delete setNewPolynomialButton;
+    delete setNewPolynomialLayout;
+
+    delete exitButton;
 }
 
 void TInterface::sendCanonicalFormRequest()
@@ -471,9 +512,9 @@ void TInterface::answer(const QString& response)
     // qDebug() << "answer:" << response << "\n";
     if (response.startsWith("POLYNOM:")) {
         QString polynomData = response.mid(8);
-        outputField->setText("Получен новый полином: " + polynomData);
+        tempOutputField->setText("Получен новый полином: " + polynomData);
     } else {
-        outputField->setText(response);
+        tempOutputField->setText(response);
     }
 }
 

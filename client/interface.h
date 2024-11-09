@@ -31,10 +31,45 @@ public slots:
 signals:
     void request(QString);
 private:
-    QLineEdit *outputField; // Поле для вывода результатов
+    QLineEdit *tempOutputField; // Поле для вывода результатов для метода answer
+    QLineEdit *tempInputField;  // Поле для ввода для метода answer
 
-    // Layouts and UI elements for various functionalities
-    QVBoxLayout *mainLayout; // Основной вертикальный макет
+    QLineEdit *outputField;
+    QPushButton *clearButton;
+    QHBoxLayout *outputLayout;
+    QVBoxLayout *mainLayout;
+
+    QLabel *canonicalFormLabel;
+    QPushButton *canonicalFormButton;
+    QHBoxLayout *canonicalFormLayout;
+
+    QLabel *classicalFormLabel;
+    QPushButton *classicalFormButton;
+    QHBoxLayout *classicalFormLayout;
+
+    QLabel *changeRootsCountLabel;
+    QLineEdit *changeRootsCountInput;
+    QPushButton *changeRootsCountButton;
+    QHBoxLayout *changeRootsCountLayout;
+
+    QLabel *newANAndRootsLabel;
+    QLineEdit *newANInput;
+    QLineEdit *newRootIndexInput;
+    QPushButton *newANAndRootsButton;
+    QHBoxLayout *newANAndRootsLayout;
+
+    QLabel *calculateValueAtXLabel;
+    QLineEdit *calculateValueAtXInput;
+    QPushButton *calculateValueAtXButton;
+    QHBoxLayout *calculateValueAtXLayout;
+
+    QLabel *setNewPolynomialLabel;
+    QLineEdit *setNewPolynomialANInput;
+    QLineEdit *setNewPolynomialRootsInput;
+    QPushButton *setNewPolynomialButton;
+    QHBoxLayout *setNewPolynomialLayout;
+
+    QPushButton *exitButton;
 
     void formRequest(RequestType requestType, const QString& params = ""); // Метод для отправки запроса на сервер с параметрами
 };
