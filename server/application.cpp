@@ -20,7 +20,7 @@ void TApplication::recieve(QByteArray msg)
 
     // Извлечение параметров из сообщения
     QString strMsg = QString(msg);
-    strMsg >> root;
+    // strMsg >> root;
 
     TPolynom p; // Создание полинома
 
@@ -49,6 +49,7 @@ void TApplication::recieve(QByteArray msg)
 
     case CHANGE_ROOTS_COUNT_REQUEST:
     {
+
         int newRootsCount;
         newRootsCount = msg.toInt(); // Получаем новое количество корней
         // логика обработки корней
@@ -82,7 +83,7 @@ void TApplication::recieve(QByteArray msg)
     }
 
     default:
-        answer << QString().setNum(ERROR_UNKNOWN_REQUEST) << "Неизвестный запрос.";
+        answer << "Неизвестный запрос.";
         break;
     }
 

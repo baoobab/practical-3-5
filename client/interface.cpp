@@ -186,12 +186,13 @@ void TInterface::sendSetNewPolynomialRequest(const QString& data)
 
 void TInterface::formRequest(RequestType requestType, const QString& params)
 {
-    emit request(QString::number(requestType) + (params.isEmpty() ? "" : " " + params));
+    emit request(QString::number(requestType) + separator + params);
     // Эмитируем сигнал запроса для отправки на сервер.
 }
 
 void TInterface::answer(const QString& response)
 {
+    // qDebug() << "answer:" << response << "\n";
     if (response.startsWith("POLYNOM:")) {
         QString polynomData = response.mid(8);
         outputField->setText("Получен новый полином: " + polynomData);
