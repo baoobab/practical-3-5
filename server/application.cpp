@@ -2,6 +2,7 @@
 #include "polynom.h"
 #include "common.h"
 #include "number.h"
+#include <QtDebug>
 
 TApplication::TApplication(int argc, char *argv[])
     : QCoreApplication(argc, argv)
@@ -61,10 +62,73 @@ void TApplication::recieve(QByteArray msg)
     }
     case CHANGE_ROOTS_COUNT_REQUEST:
     {
+        // Извлекаем индекс корня (первый параметр)
+        QString StrNewRootsCount = strMsg.mid(0, strMsg.indexOf(separatorChar));
+        // Удаляем первую часть строки до первого разделителя
+        strMsg.remove(0, strMsg.indexOf(separatorChar) + 1);
 
-        int newRootsCount;
-        newRootsCount = msg.toInt(); // Получаем новое количество корней
+        // Извлекаем второй параметр (сам корень)
+        QString strNewRoots = strMsg.mid(0, strMsg.indexOf(separatorChar));
+
+        // Если второй параметр - это последнее значение в строке, и нет второго разделителя
+        if (strNewRoots.isEmpty()) {
+            strNewRoots = strMsg; // Берем всю оставшуюся строку
+        }
+
+        int newRootsCount = StrNewRootsCount.toInt();
+        int addedCount = newRootsCount - p.getRootsCount();
+
+        if (newRootsCount <= 0)
+        {
+            answer << QString().setNum(CHANGE_ROOTS_COUNT_ANSWER) << "ERR1" << p; // Ответ формата - код_запроса;статус
+            break;
+        }
+
+        // если размер массива уменьшился
+        if (addedCount < 0)
+        {
+            p.changeArrRootSize(newRootsCount);
+            answer << QString().setNum(CHANGE_ROOTS_COUNT_ANSWER) << "OK" << p; // Ответ формата - код_запроса;статус
+            break;
+        }
+
+        // если размер массива не изменился
+        if (addedCount == 0)
+        {
+            answer << QString().setNum(CHANGE_ROOTS_COUNT_ANSWER) << "ERR2" << p; // Ответ формата - код_запроса;статус
+            break;
+        }
+
         // логика обработки корней
+        QStringList rootsList = strNewRoots.split(' '); // Разделяем строку на части по пробелу
+        if (rootsList.size() != addedCount * 2)
+        {
+            answer << QString().setNum(CHANGE_ROOTS_COUNT_ANSWER) << "ERR3" << p; // Ответ формата - код_запроса;статус
+            break;
+        }
+
+        QString arr[2];
+        int iter = 0;
+        for (QString& item : rootsList)
+        {
+            if (!item.isEmpty())
+            { // Проверяем, что часть не пустая
+                arr[iter++] = item;
+            }
+            if (iter == 2)
+            {
+                QString concaetedNum;
+                 number tmpNum;
+                 concaetedNum = arr[0] + " " + arr[1];
+                 concaetedNum >> tmpNum;
+
+                 p.changeArrRootSize(p.getRootsCount() + 1);
+                 p.changeRootByIndex(p.getRootsCount() - 1, tmpNum);
+                 p.calcCoefFromRoots();
+
+                iter = 0;
+            }
+        }
         answer << QString().setNum(CHANGE_ROOTS_COUNT_ANSWER) << "OK" << p; // Ответ формата - код_запроса;статус;полином
         break;
     }
@@ -88,7 +152,10 @@ void TApplication::recieve(QByteArray msg)
 
     case CALCULATE_VALUE_AT_X_REQUEST:
     {
-        answer << QString().setNum(CALCULATE_VALUE_AT_X_ANSWER) << "OK" << p.value(0); // Ответ формата - код_запроса;статус;значение
+        QString strX = strMsg.mid(0, strMsg.indexOf(separatorChar)); // Первый параметр (после полинома) - точка x
+        number x;
+        strX >> x;
+        answer << QString().setNum(CALCULATE_VALUE_AT_X_ANSWER) << "OK" << p.value(x) << QString(';') << x; // Ответ формата - код_запроса;статус;значение
         break;
     }
 
@@ -171,6 +238,7 @@ void TApplication::recieve(QByteArray msg)
         answer << QString().setNum(ADD_ROOTS_ANSWER) << "OK" << p; // Ответ формата - код_запроса;статус;полином
         break;
     }
+
     default:
     {
         answer << QString().setNum(ERROR_UNKNOWN_REQUEST) << "ERR"; // Ответ формата - код_запроса;статус
