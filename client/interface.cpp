@@ -18,9 +18,6 @@ TInterface::TInterface(QWidget *parent)
     outputField->setPlaceholderText("Результат любого пункта будет здесь...");
     outputField->setMaximumWidth(350);
 
-    tempOutputField = outputField;
-    tempInputField = nullptr;
-
     // Кнопка "Очистить"
     QPushButton *clearButton = new QPushButton("Очистить", this);
     connect(clearButton, &QPushButton::clicked, this, &TInterface::clearOutput);
@@ -37,7 +34,7 @@ TInterface::TInterface(QWidget *parent)
     // Пункт 1: Вывод канонического вида полинома
     QLabel *canonicalFormLabel = new QLabel("Вывод канонического вида полинома", this);
     QPushButton *canonicalFormButton = new QPushButton("Вывести", this);
-    connect(canonicalFormButton, &QPushButton::clicked, this, &TInterface::sendCanonicalFormRequest);
+    connect(canonicalFormButton, &QPushButton::clicked, this, &TInterface::showCanonicalForm);
 
     QHBoxLayout *canonicalFormLayout = new QHBoxLayout();
     canonicalFormLayout->addWidget(canonicalFormLabel);
@@ -47,7 +44,7 @@ TInterface::TInterface(QWidget *parent)
     // Пункт 2: Вывод классического вида полинома
     QLabel *classicalFormLabel = new QLabel("Вывод классического вида полинома", this);
     QPushButton *classicalFormButton = new QPushButton("Вывести", this);
-    connect(classicalFormButton, &QPushButton::clicked, this, &TInterface::sendClassicalFormRequest);
+    connect(classicalFormButton, &QPushButton::clicked, this, &TInterface::showClassicalForm);
 
     QHBoxLayout *classicalFormLayout = new QHBoxLayout();
     classicalFormLayout->addWidget(classicalFormLabel);
@@ -63,7 +60,7 @@ TInterface::TInterface(QWidget *parent)
     QPushButton *changeRootsCountButton = new QPushButton("Изменить", this);
     connect(changeRootsCountButton, &QPushButton::clicked, [this, changeRootsCountInput]() {
         QString inputText = changeRootsCountInput->text();
-        sendChangeRootsCountRequest(inputText);
+        changeRootsCount(inputText);
         changeRootsCountInput->clear();
     });
 
@@ -88,7 +85,7 @@ TInterface::TInterface(QWidget *parent)
     connect(newANAndRootsButton, &QPushButton::clicked, [this, newANInput, newRootIndexInput]() {
         QString anText = newANInput->text();
         QString indexText = newRootIndexInput->text();
-        sendChangeRootAndANRequest(anText, indexText);
+        changeRootAndAN(anText, indexText);
         newANInput->clear();
         newRootIndexInput->clear();
     });
@@ -110,7 +107,7 @@ TInterface::TInterface(QWidget *parent)
     QPushButton *calculateValueAtXButton = new QPushButton("Вычислить", this);
     connect(calculateValueAtXButton, &QPushButton::clicked, [this, calculateValueAtXInput]() {
         QString inputText = calculateValueAtXInput->text();
-        sendCalculateValueAtXRequest(inputText);
+        calculateValueAtX(inputText);
         calculateValueAtXInput->clear();
     });
 
@@ -134,7 +131,7 @@ TInterface::TInterface(QWidget *parent)
     connect(setNewPolynomialButton, &QPushButton::clicked, [this, setNewPolynomialANInput, setNewPolynomialRootsInput]() {
         QString anText = setNewPolynomialANInput->text();
         QString rootsText = setNewPolynomialRootsInput->text();
-        sendSetNewPolynomialRequest(anText, rootsText);
+        setNewPolynomial(anText, rootsText);
         setNewPolynomialANInput->clear();
         setNewPolynomialRootsInput->clear();
     });
@@ -158,17 +155,10 @@ TInterface::TInterface(QWidget *parent)
 
     // strPolynom используется для сохранения текущего состояния полинома, очищаем её
     clearStrPolynom();
-
-    qDebug() << "Супер-важно! теперь мы обязаны передавать параметры запроса в таком порядке:\n"
-                "код_запроса;полином;всё_остальное;итд\n"
-                "Полином из strPolynom автоматически встраивается в запрос, если юзать метод formRequest, передавать руками его не нужно\n";
-    qDebug() << "А ответ от сервера приходит в формате: код_запроса;статус;данные\n";
 }
 
 TInterface::~TInterface()
 {
-    delete tempOutputField;
-    delete tempInputField;
 
     delete outputField;
     delete clearButton;
@@ -212,24 +202,20 @@ void TInterface::clearStrPolynom() {
     strPolynom = "P(x) = (1+0i)";
 }
 
-void TInterface::sendCanonicalFormRequest()
+void TInterface::showCanonicalForm()
 {
-    tempOutputField = outputField;
     formRequest(CANONICAL_FORM_REQUEST); // Отправляем запрос на вывод канонического вида
 }
 
-void TInterface::sendClassicalFormRequest()
+void TInterface::showClassicalForm()
 {
-    tempOutputField = outputField;
     formRequest(CLASSICAL_FORM_REQUEST); // Отправляем запрос на вывод классического вида
 }
 
-void TInterface::sendChangeRootsCountRequest(const QString& count)
+void TInterface::changeRootsCount(const QString& count)
 {
-    QString outputText; // Результирующая строка
     bool ok;
     int size = count.toInt(&ok);
-    QString infoText;
 
     if (!ok || size <= 0)
     {
@@ -280,7 +266,7 @@ void TInterface::sendChangeRootsCountRequest(const QString& count)
     delete dialog;
 }
 
-void TInterface::sendChangeRootAndANRequest(QString& anText, QString& indexText)
+void TInterface::changeRootAndAN(QString& anText, QString& indexText)
 {
     if (anText.length() > 0)
     {
@@ -336,12 +322,12 @@ void TInterface::sendChangeRootAndANRequest(QString& anText, QString& indexText)
     delete dialog;
 }
 
-void TInterface::sendCalculateValueAtXRequest(const QString& x)
+void TInterface::calculateValueAtX(const QString& x)
 {
        formRequest(CALCULATE_VALUE_AT_X_REQUEST, x);
 }
 
-void TInterface::sendSetNewPolynomialRequest(QString& anText, QString& rootsText)
+void TInterface::setNewPolynomial(QString& anText, QString& rootsText)
 {
     clearStrPolynom(); // Сброс текущего состояния полинома
 
@@ -394,45 +380,43 @@ void TInterface::answer(const QString& response)
 
     switch (requestType) {
     case CANONICAL_FORM_ANSWER:
-        // strPolynom = strMsg; // Здесь не присваиваем, тк полином хранится в классическом виде
-        tempOutputField->setText(strMsg);
+        outputField->setText(strMsg);
         break;
     case CLASSICAL_FORM_ANSWER:
-        strPolynom = strMsg; // Остальная часть ответа - полином (на данный момент)
-        tempOutputField->setText(strPolynom);
+        strPolynom = strMsg; // Остальная часть ответа - полином
+        outputField->setText(strPolynom);
         break;
     case SET_CANONIC_COEF_ANSWER:
         if (statusCode == "ERR")
         {
-            tempOutputField->setText("error in SET_CANONIC_COEF_ANSWER");
+            outputField->setText("error in SET_CANONIC_COEF_ANSWER");
             break;
         }
 
-        strPolynom = strMsg; // Остальная часть ответа - полином (на данный момент)
-        tempOutputField->setText(strPolynom);
+        strPolynom = strMsg; // Остальная часть ответа - полином
+        outputField->setText(strPolynom);
         break;
     case SET_NEW_POLYNOMIAL_ANSWER:
     {
-        strPolynom = strMsg; // Остальная часть ответа - полином (на данный момент)
-        tempOutputField->setText(strPolynom);
+        strPolynom = strMsg; // Остальная часть ответа - полином
+        outputField->setText(strPolynom);
         break;
     }
     case CHANGE_ROOT_ANSWER:
         if (statusCode == "ERR")
         {
-            tempOutputField->setText("error in CHANGE_ROOT_ANSWER");
-            QMessageBox::critical(this, "Ошибка", "Корень не изменился, проверьте правильность ввода"); // Костыляем, по другому не умею
+            QMessageBox::critical(this, "Ошибка", "Корень не изменился, проверьте правильность ввода");
             break;
         }
 
-        strPolynom = strMsg; // Остальная часть ответа - полином (на данный момент)
-        tempOutputField->setText(strPolynom);
-        QMessageBox::information(this, "Успех", "Корень изменён успешно");  // Костыляем, по другому не умею
+        strPolynom = strMsg; // Остальная часть ответа - полином
+        outputField->setText(strPolynom);
+        QMessageBox::information(this, "Успех", "Корень изменён успешно");
         break;
     case ADD_ROOTS_ANSWER:
     {
-        strPolynom = strMsg; // Остальная часть ответа - полином (на данный момент)
-        tempOutputField->setText(strPolynom);
+        strPolynom = strMsg; // Остальная часть ответа - полином
+        outputField->setText(strPolynom);
         break;
     }
 
@@ -452,7 +436,7 @@ void TInterface::answer(const QString& response)
         }
         QString outpuPx = "P(" + valX + ") = " + valP;
         // Извлекаем значение в точке х и выводим его
-        tempOutputField->setText(outpuPx);
+        outputField->setText(outpuPx);
         break;
     }
 
@@ -460,32 +444,29 @@ void TInterface::answer(const QString& response)
     {
         if (statusCode == "ERR1")
         {
-            tempOutputField->setText("error in CHANGE_ROOTS_COUNT_ANSWER");
-            QMessageBox::critical(this, "Ошибка", "Количество корней не может быть отрицательным"); // Костыляем, по другому не умею
+            QMessageBox::critical(this, "Ошибка", "Количество корней не может быть отрицательным");
             break;
         }
 
         if (statusCode == "ERR2")
         {
-            tempOutputField->setText("error in CHANGE_ROOTS_COUNT_ANSWER");
-            QMessageBox::critical(this, "Ошибка", "Количество корней совпадает с исходным"); // Костыляем, по другому не умею
+            QMessageBox::critical(this, "Ошибка", "Количество корней совпадает с исходным");
             break;
         }
 
         if (statusCode == "ERR3")
         {
-            tempOutputField->setText("error in CHANGE_ROOTS_COUNT_ANSWER");
-            QMessageBox::critical(this, "Ошибка", "Количество введенных корней не совпадает с выбранным"); // Костыляем, по другому не умею
+            QMessageBox::critical(this, "Ошибка", "Количество введенных корней не совпадает с выбранным");
             break;
         }
 
-        strPolynom = strMsg; // Остальная часть ответа - полином (на данный момент)
-        tempOutputField->setText(strPolynom);
+        strPolynom = strMsg; // Остальная часть ответа - полином
+        outputField->setText(strPolynom);
         QMessageBox::information(this, "Успех", "Полином изменён успешно");
         break;
     }
     default:
-        tempOutputField->setText("Неизвестный ответ.");
+        outputField->setText("Неизвестный ответ.");
         break;
     }
 }

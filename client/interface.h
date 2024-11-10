@@ -19,12 +19,12 @@ public:
 
 public slots:
     void clearOutput(); // Очистить поле вывода
-    void sendCanonicalFormRequest(); // Отправить запрос на вывод канонического вида полинома
-    void sendClassicalFormRequest(); // Отправить запрос на вывод классического вида полинома
-    void sendChangeRootsCountRequest(const QString& inputText); // Отправить запрос на изменение количества корней
-    void sendCalculateValueAtXRequest(const QString& x); // Отправить запрос на вычисление значения в точке x
-    void sendSetNewPolynomialRequest(QString& anText, QString& rootsText); // Отправить запрос на задание нового полинома
-    void sendChangeRootAndANRequest(QString& anText, QString& indexText); // Отправить запрос на изменение a_n и корня по индексу
+    void showCanonicalForm(); // Отправить запрос на вывод канонического вида полинома
+    void showClassicalForm(); // Отправить запрос на вывод классического вида полинома
+    void changeRootsCount(const QString& inputText); // Отправить запрос на изменение количества корней
+    void calculateValueAtX(const QString& x); // Отправить запрос на вычисление значения в точке x
+    void setNewPolynomial(QString& anText, QString& rootsText); // Отправить запрос на задание нового полинома
+    void changeRootAndAN(QString& anText, QString& indexText); // Отправить запрос на изменение a_n и корня по индексу
     void exitApplication(); // Выход из приложения
     void answer(const QString& response); // Обработка ответа от сервера
 
@@ -32,9 +32,6 @@ signals:
     void request(QString);
 private:
     QString strPolynom; // Строка для хранения текущего полинома
-
-    QLineEdit *tempOutputField; // Поле для вывода результатов для метода answer
-    QLineEdit *tempInputField;  // Поле для ввода для метода answer
 
     QLineEdit *outputField;
     QPushButton *clearButton;

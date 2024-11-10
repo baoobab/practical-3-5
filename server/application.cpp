@@ -43,7 +43,7 @@ void TApplication::recieve(QByteArray msg)
     QString param = strMsg.mid(0, strMsg.indexOf(separatorChar)); // Получаем первый параметр - это должен быть полином
 
     TPolynom p(param); // Создание полинома
-    p.setPrintMode(EPrintMode::EPrintModeClassic); // Ставим классик принт мод для норм отображения
+    p.setPrintMode(EPrintMode::EPrintModeClassic); // Ставим EPrintModeClassic мод для корректной работы
 
     strMsg.remove(0, strMsg.indexOf(separatorChar) + 1); // Убираем полином из сообщения
 
@@ -246,6 +246,5 @@ void TApplication::recieve(QByteArray msg)
     }
     }
 
-    qDebug() << "Sending response:" << answer; // Логируем ответ перед отправкой
-    comm->send(QByteArray().append(answer.toUtf8())); // Отправляем ответ обратно клиенту answer.toUtf8()
+    comm->send(QByteArray().append(answer.toUtf8())); // Отправляем ответ обратно клиенту
 }
