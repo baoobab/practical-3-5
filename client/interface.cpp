@@ -151,7 +151,8 @@ TInterface::TInterface(QWidget *parent)
     // Установка основного макета
     setLayout(mainLayout);
 
-    strPolynom = "P(x) = (2+0i)(x - (1-2i))(x - (-3-4i))"; // TODO: потом убрать, чисто тест
+    // strPolynom используется для сохранения текущего состояния полинома, очищаем её
+    clearStrPolynom();
 
     qDebug() << "Супер-важно! теперь мы обязаны передавать параметры запроса в таком порядке:\n"
                 "код_запроса;полином;всё_остальное;итд\n"
@@ -200,6 +201,10 @@ TInterface::~TInterface()
     delete setNewPolynomialLayout;
 
     delete exitButton;
+}
+
+void TInterface::clearStrPolynom() {
+    strPolynom = "P(x) = (1+0i)";
 }
 
 void TInterface::sendCanonicalFormRequest()
@@ -412,66 +417,29 @@ void TInterface::sendCalculateValueAtXRequest(const QString& x)
 
 void TInterface::sendSetNewPolynomialRequest(QString& anText, QString& rootsText)
 {
-    if (anText.length() > 0)
-        {
-            QString outputText; // Результирующая строка
+    clearStrPolynom(); // Сброс текущего состояния полинома
 
-            // number numAN; // Введённые данные для a_n в числовом представлении
-            // anText >> numAN;
-            // TODO: вместо этого кидать запрос на сервер - чтобы он отвалидировал строку в тип number
+    if (anText.length() == 0 && rootsText.length() == 0)
+    {
+        QMessageBox::information(this, "Инфо", "Поля пустые, полином сброшен");
+        clearOutput();
+        return;
+    }
 
-            // polynom->flushMemory();
-            // polynom->setCanonicCoef(numAN);
-            // TODO: вместо этого кидать запрос на сервер
+    if (anText.length() > 0 && rootsText.length() > 0)
+    {
+        formRequest(SET_NEW_POLYNOMIAL_REQUEST, anText + separator + rootsText);
+        return;
+    }
 
-            clearOutput();
-            outputText.clear();
-            // outputText << *polynom;
-            // TODO: вместо этого кидать запрос на сервер
-            outputField->setText(outputText);
+    if (anText.length() > 0) {
+        formRequest(SET_CANONIC_COEF_REQUEST, anText);
+    }
 
-            if (rootsText.length() == 0) return;
-
-            QStringList rootsList = rootsText.split(' '); // Разделяем строку на части по пробелу
-            QString arr[2] = {};
-            int tmp = 0;
-
-            for (QString& rootText : rootsList)
-            {
-                if (!rootText.isEmpty())
-                { // Проверяем, что часть не пустая
-                    arr[tmp++] = rootText;
-                }
-
-                if (tmp == 2)
-                {
-                    QString concaetedNum;
-                    // number tmpNum;
-                    // concaetedNum = arr[0] + " " + arr[1];
-                    // concaetedNum >> tmpNum;
-                    // TODO: вместо этого кидать запрос на сервер - чтобы он отвалидировал строку в тип number
-
-                    // polynom->addRoot(tmpNum);
-                    // polynom->calcCoefFromRoots();
-                    // TODO: вместо этого кидать запрос на сервер
-
-                    clearOutput();
-                    outputText.clear();
-                    // outputText << *polynom;
-                    // TODO: вместо этого кидать запрос на сервер
-                    outputField->setText(outputText);
-
-                    tmp = 0;
-                }
-
-            }
-
-            // formRequest(SET_NEW_POLYNOMIAL_REQUEST, data); // ПРИМЕР: Отправляем запрос на задание нового полинома с параметром data.
-        }
-        else
-        {
-            outputField->setText("Поле ввода пустое!");
-        }
+    if (rootsText.length() > 0)
+    {
+        formRequest(ADD_ROOTS_REQUEST, rootsText);
+    }
 }
 
 void TInterface::formRequest(RequestType requestType, const QString& params)
@@ -508,7 +476,8 @@ void TInterface::answer(const QString& response)
         tempOutputField->setText(strPolynom);
         break;
     case SET_CANONIC_COEF_ANSWER:
-        if (statusCode == "ERR") {
+        if (statusCode == "ERR")
+        {
             tempOutputField->setText("error in SET_CANONIC_COEF_ANSWER");
             break;
         }
@@ -516,8 +485,15 @@ void TInterface::answer(const QString& response)
         strPolynom = strMsg; // Остальная часть ответа - полином (на данный момент)
         tempOutputField->setText(strPolynom);
         break;
+    case SET_NEW_POLYNOMIAL_ANSWER:
+    {
+        strPolynom = strMsg; // Остальная часть ответа - полином (на данный момент)
+        tempOutputField->setText(strPolynom);
+        break;
+    }
     case CHANGE_ROOT_ANSWER:
-        if (statusCode == "ERR") {
+        if (statusCode == "ERR")
+        {
             tempOutputField->setText("error in CHANGE_ROOT_ANSWER");
             QMessageBox::critical(this, "Ошибка", "Корень не изменился, проверьте правильность ввода"); // Костыляем, по другому не умею
             break;
@@ -527,6 +503,12 @@ void TInterface::answer(const QString& response)
         tempOutputField->setText(strPolynom);
         QMessageBox::information(this, "Успех", "Корень изменён успешно");  // Костыляем, по другому не умею
         break;
+    case ADD_ROOTS_ANSWER:
+    {
+        strPolynom = strMsg; // Остальная часть ответа - полином (на данный момент)
+        tempOutputField->setText(strPolynom);
+        break;
+    }
     default:
         tempOutputField->setText("Неизвестный ответ.");
         break;

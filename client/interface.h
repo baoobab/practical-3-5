@@ -73,6 +73,7 @@ private:
 
     QPushButton *exitButton;
 
+    void clearStrPolynom(); // Сброс текущего состояния полинома у клиента
     void formRequest(RequestType requestType, const QString& params = ""); // Метод для отправки запроса на сервер с параметрами
 };
 

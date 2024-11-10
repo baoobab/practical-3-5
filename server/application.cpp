@@ -40,7 +40,10 @@ void TApplication::recieve(QByteArray msg)
     }
 
     QString param = strMsg.mid(0, strMsg.indexOf(separatorChar)); // Получаем первый параметр - это должен быть полином
+
     TPolynom p(param); // Создание полинома
+    p.setPrintMode(EPrintMode::EPrintModeClassic); // Ставим классик принт мод для норм отображения
+
     strMsg.remove(0, strMsg.indexOf(separatorChar) + 1); // Убираем полином из сообщения
 
     switch (requestType)
@@ -53,7 +56,6 @@ void TApplication::recieve(QByteArray msg)
     }
     case CLASSICAL_FORM_REQUEST:
     {
-        p.setPrintMode(EPrintMode::EPrintModeClassic);
         answer << QString().setNum(CLASSICAL_FORM_ANSWER) << "OK" << p; // Ответ формата - код_запроса;статус;полином
         break;
     }
@@ -80,7 +82,6 @@ void TApplication::recieve(QByteArray msg)
             break;
         }
 
-        p.setPrintMode(EPrintMode::EPrintModeClassic); // Ставим классик принт мод для норм отображения
         answer << QString().setNum(CHANGE_ROOT_ANSWER) << "OK" << p; // Ответ формата - код_запроса;статус;полином
         break;
     }
@@ -93,9 +94,39 @@ void TApplication::recieve(QByteArray msg)
 
     case SET_NEW_POLYNOMIAL_REQUEST:
     {
-        QString newPolynomialData;
-        newPolynomialData = strMsg; // Ожидаем данные для нового полинома
-        // Логика задания нового полинома должна быть реализована в классе TPolinom
+        QString canonicCoef = strMsg.mid(0, strMsg.indexOf(separatorChar)); // Первый параметр (после полинома) - канон. коэф
+        QString rootsText = strMsg.mid(strMsg.indexOf(separatorChar)); // Второй параметр (после полинома) - корни, строкой
+
+        number newCanonicCoef;
+        canonicCoef >> newCanonicCoef;
+        p.setCanonicCoef(newCanonicCoef);
+
+        QStringList rootsList = rootsText.split(' '); // Разделяем строку корней на части по пробелу
+        QString arr[2] = {};
+        int tmp = 0;
+
+        for (QString& rootText : rootsList)
+        {
+            if (!rootText.isEmpty())
+            { // Проверяем, что часть не пустая
+                arr[tmp++] = rootText;
+            }
+
+            if (tmp == 2)
+            {
+                QString concaetedNum;
+                number newRoot;
+
+                concaetedNum = arr[0] + " " + arr[1];
+                concaetedNum >> newRoot;
+
+                p.addRoot(newRoot);
+
+                tmp = 0;
+            }
+
+        }
+
         answer << QString().setNum(SET_NEW_POLYNOMIAL_ANSWER) << "OK" << p; // Ответ формата - код_запроса;статус;полином
         break;
     }
@@ -105,9 +136,39 @@ void TApplication::recieve(QByteArray msg)
         strMsg >> newCanonicCoef; // Единственный параметр (после полинома) - канон. коэф
 
         p.setCanonicCoef(newCanonicCoef);
-        p.setPrintMode(EPrintMode::EPrintModeClassic); // Ставим классик принт мод для норм отображения
 
         answer << QString().setNum(SET_CANONIC_COEF_ANSWER) << "OK" << p; // Ответ формата - код_запроса;статус;полином
+        break;
+    }
+    case ADD_ROOTS_REQUEST: {
+        // Единственный параметр (после полинома) - строка новых корней
+        QStringList rootsList = strMsg.split(' '); // Разделяем строку корней на части по пробелу
+        QString arr[2] = {};
+        int tmp = 0;
+
+        for (QString& rootText : rootsList)
+        {
+            if (!rootText.isEmpty())
+            { // Проверяем, что часть не пустая
+                arr[tmp++] = rootText;
+            }
+
+            if (tmp == 2)
+            {
+                QString concaetedNum;
+                number newRoot;
+
+                concaetedNum = arr[0] + " " + arr[1];
+                concaetedNum >> newRoot;
+
+                p.addRoot(newRoot);
+
+                tmp = 0;
+            }
+
+        }
+
+        answer << QString().setNum(ADD_ROOTS_ANSWER) << "OK" << p; // Ответ формата - код_запроса;статус;полином
         break;
     }
     default:

@@ -77,6 +77,7 @@ void TPolynom::addCoef(number coef) {
 
 void TPolynom::addRoot(number root) {
     this->arrRoot->appendElement(root);
+    this->calcCoefFromRoots();
 }
 
 
