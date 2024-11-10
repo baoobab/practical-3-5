@@ -152,6 +152,11 @@ TInterface::TInterface(QWidget *parent)
     setLayout(mainLayout);
 
     strPolynom = "P(x) = (2+0i)(x - (1-2i))(x - (-3-4i))"; // TODO: потом убрать, чисто тест
+
+    qDebug() << "Супер-важно! теперь мы обязаны передавать параметры запроса в таком порядке:\n"
+                "код_запроса;полином;всё_остальное;итд\n"
+                "Полином из strPolynom автоматически встраивается в запрос, если юзать метод formRequest, передавать руками его не нужно\n";
+    qDebug() << "А ответ от сервера приходит в формате: код_запроса;статус;данные\n";
 }
 
 TInterface::~TInterface()
@@ -377,13 +382,11 @@ void TInterface::sendChangeRootAndANRequest(QString& anText, QString& indexText)
         QString reqText = QString::number(index) + separator + newRootInput->text();
         formRequest(CHANGE_ROOT_REQUEST, reqText);
 
-        bool isChanged = true; // TODO: добавить обработку ошибок в ответах
-
-        if (isChanged) {
-            QMessageBox::information(this, "Успех", "Корень изменён успешно");
-        } else {
-            QMessageBox::critical(this, "Ошибка", "Корень не изменился, проверьте правильность ввода");
-        }
+        // if (isChanged) {
+        //     QMessageBox::information(this, "Успех", "Корень изменён успешно");
+        // } else {
+        //     QMessageBox::critical(this, "Ошибка", "Корень не изменился, проверьте правильность ввода");
+        // }
     }
 
     delete dialog;
@@ -492,22 +495,37 @@ void TInterface::answer(const QString& response)
     int requestType = response.left(pos).toInt(); // Получаем тип запроса
     QString strMsg = response.mid(pos + 1); // Убираем тип запроса из сообщения
 
+    const QString statusCode = strMsg.mid(0, strMsg.indexOf(separatorChar)); // Получаем статус код из запроса
+    strMsg = strMsg.remove(0, strMsg.indexOf(separatorChar) + 1); // Убираем статус код из запроса
 
     switch (requestType) {
     case CANONICAL_FORM_ANSWER:
+        // strPolynom = strMsg; // Здесь не присваиваем, тк полином хранится в классическом виде
         tempOutputField->setText(strMsg);
         break;
     case CLASSICAL_FORM_ANSWER:
-        strPolynom = strMsg;
+        strPolynom = strMsg; // Остальная часть ответа - полином (на данный момент)
         tempOutputField->setText(strPolynom);
         break;
     case SET_CANONIC_COEF_ANSWER:
-        strPolynom = strMsg;
+        if (statusCode == "ERR") {
+            tempOutputField->setText("error in SET_CANONIC_COEF_ANSWER");
+            break;
+        }
+
+        strPolynom = strMsg; // Остальная часть ответа - полином (на данный момент)
         tempOutputField->setText(strPolynom);
         break;
     case CHANGE_ROOT_ANSWER:
-        strPolynom = strMsg;
+        if (statusCode == "ERR") {
+            tempOutputField->setText("error in CHANGE_ROOT_ANSWER");
+            QMessageBox::critical(this, "Ошибка", "Корень не изменился, проверьте правильность ввода"); // Костыляем, по другому не умею
+            break;
+        }
+
+        strPolynom = strMsg; // Остальная часть ответа - полином (на данный момент)
         tempOutputField->setText(strPolynom);
+        QMessageBox::information(this, "Успех", "Корень изменён успешно");  // Костыляем, по другому не умею
         break;
     default:
         tempOutputField->setText("Неизвестный ответ.");
